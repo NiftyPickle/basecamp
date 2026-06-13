@@ -2055,7 +2055,50 @@ function createActiveBackend(dashboardArgs) {
   }
 }
 
+// createBundledBackend — build a backend from the self-contained Python bundle
+// staged at build time (scripts/stage-backend.cjs) and shipped via
+// extraResources to process.resourcesPath/backend. This is the ONLY backend a
+// packaged wave-1 build should ever use: a relocatable standalone CPython with
+// deps baked in (backend/runtime) running the staged source (backend/src) on
+// PYTHONPATH. Fully offline -- no clone, no network bootstrap, no upstream
+// dependency. Returns null when the bundle is absent (e.g. dev runs).
+function createBundledBackend(dashboardArgs) {
+  const resourcesPath = process.resourcesPath
+  if (!resourcesPath) return null
+  const backendRoot = path.join(resourcesPath, 'backend')
+  const src = path.join(backendRoot, 'src')
+  const python =
+    [path.join(backendRoot, 'runtime', 'bin', 'python3'), path.join(backendRoot, 'runtime', 'bin', 'python3.12')].find(
+      fileExists
+    ) || null
+  if (!python || !directoryExists(src) || !fileExists(path.join(src, 'hermes_cli', 'main.py'))) {
+    return null
+  }
+  return {
+    kind: 'python',
+    label: `bundled Basecamp backend at ${backendRoot}`,
+    command: python,
+    args: ['-m', 'hermes_cli.main', ...dashboardArgs],
+    env: {
+      PYTHONPATH: [src, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
+    },
+    root: src,
+    bootstrap: false,
+    shell: false
+  }
+}
+
 function resolveHermesBackend(dashboardArgs) {
+  // 0. Self-contained bundle -- packaged wave-1 builds ship a relocatable
+  //    CPython + deps + source under process.resourcesPath/backend. It is
+  //    fully offline and is what we shipped, so it wins over every install-
+  //    detection path below. Absent in dev (returns null) where the explicit
+  //    override / dev-source branches take over.
+  if (IS_PACKAGED) {
+    const bundled = createBundledBackend(dashboardArgs)
+    if (bundled) return bundled
+  }
+
   // 1. Explicit override -- HERMES_DESKTOP_HERMES_ROOT points at a developer
   //    checkout. Honour it as-is (no bootstrap; the user is driving).
   const overrideRoot = process.env.HERMES_DESKTOP_HERMES_ROOT && path.resolve(process.env.HERMES_DESKTOP_HERMES_ROOT)
