@@ -137,8 +137,8 @@ test('applyAppUpdate (unsigned) opens the release page and returns a manual comm
 
   assert.equal(result.ok, true)
   assert.equal(result.manual, true)
-  assert.equal(result.command, 'https://github.com/33labs/basecamp/releases/tag/v2.3.4')
-  assert.deepEqual(opened, ['https://github.com/33labs/basecamp/releases/tag/v2.3.4'])
+  assert.equal(result.command, 'https://github.com/NiftyPickle/basecamp/releases/tag/v2.3.4')
+  assert.deepEqual(opened, ['https://github.com/NiftyPickle/basecamp/releases/tag/v2.3.4'])
   assert.equal(progress.length, 1)
   assert.equal(progress[0].stage, 'manual')
 })

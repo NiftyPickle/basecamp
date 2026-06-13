@@ -6,7 +6,7 @@
  * Wave-1 ships a self-contained bundle (no .git checkout), so the legacy
  * git-pull self-update path in main.cjs degrades to "not a git checkout".
  * Packaged builds instead check a GitHub Releases feed (publish config:
- * provider github, owner 33labs, repo basecamp). electron-builder bakes that
+ * provider github, owner NiftyPickle, repo basecamp). electron-builder bakes that
  * feed into `app-update.yml` under resources at pack time -- its presence is
  * the signal that this binary can talk to the update feed.
  *
@@ -32,7 +32,7 @@ const AUTO_INSTALL_ENABLED = false
 
 // Mirrors the electron-builder `publish` block in package.json. Used only to
 // construct the human-facing release page URL for the manual-download path.
-const GH_OWNER = '33labs'
+const GH_OWNER = 'NiftyPickle'
 const GH_REPO = 'basecamp'
 
 let cachedAutoUpdater

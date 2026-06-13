@@ -148,7 +148,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "33labs",
+        "owner": "NiftyPickle",
         "repo": "basecamp",
         "releaseType": "release"
       }
