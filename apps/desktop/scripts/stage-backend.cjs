@@ -34,6 +34,11 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 
+// Windows python-build-standalone lays the interpreter out as <root>/python.exe
+// (no bin/ dir, no versionless symlink); Unix uses <root>/bin/python3{,.12}.
+// Every interpreter-path and copy decision below branches on this.
+const IS_WINDOWS = process.platform === 'win32'
+
 const APP_ROOT = path.resolve(__dirname, '..')
 const REPO_ROOT = path.resolve(APP_ROOT, '..', '..')
 const STAGE_ROOT = path.join(APP_ROOT, 'build', 'backend')
@@ -121,9 +126,12 @@ function resolveManagedPython() {
   // (cpython-3.12.13-...). Copying the alias farms external symlinks and the
   // copy is not relocatable. realpath the binary to reach the real install.
   const binPath = fs.realpathSync(found)
-  // binPath is <install>/bin/python3.12 -> install root is two levels up.
-  const installRoot = path.dirname(path.dirname(binPath))
-  if (!fs.existsSync(path.join(installRoot, 'bin'))) {
+  // Unix: binPath is <install>/bin/python3.12 -> install root is two levels up,
+  // and the install must contain bin/. Windows: binPath is <install>/python.exe
+  // -> install root is one level up, validated by python.exe at the root.
+  const installRoot = IS_WINDOWS ? path.dirname(binPath) : path.dirname(path.dirname(binPath))
+  const layoutMarker = IS_WINDOWS ? path.join(installRoot, 'python.exe') : path.join(installRoot, 'bin')
+  if (!fs.existsSync(layoutMarker)) {
     throw new Error(`stage-backend: unexpected managed python layout at ${installRoot}`)
   }
   return installRoot
@@ -134,9 +142,17 @@ function stageRuntime() {
   console.log(`[stage-backend] copying managed python from ${installRoot}`)
   rmrf(RUNTIME_DIR)
   ensureDir(path.dirname(RUNTIME_DIR))
-  // Preserve symlinks (-R, not -L) and modes; the standalone relies on internal
-  // symlinks (python3 -> python3.12) and executable bits.
-  run('cp', ['-R', installRoot, RUNTIME_DIR])
+  if (IS_WINDOWS) {
+    // Windows has no `cp` and the standalone is symlink-free, so a plain
+    // recursive copy is correct and keeps the runtime relocatable.
+    fs.cpSync(installRoot, RUNTIME_DIR, { recursive: true })
+  } else {
+    // Unix: `cp -R` (not -L) preserves the internal symlinks (python3 ->
+    // python3.12) and executable bits the standalone relies on for relocation.
+    // fs.cpSync does NOT reproduce this here -- the copy loses relocatability
+    // (sys.prefix stays at the source), so keep the proven cp invocation.
+    run('cp', ['-R', installRoot, RUNTIME_DIR])
+  }
 
   const py = runtimePython()
   if (!fs.existsSync(py)) {
@@ -151,12 +167,12 @@ function stageRuntime() {
 }
 
 function runtimePython() {
-  // The standalone ships bin/python3 and bin/python3.12; prefer the versionless
-  // symlink so main.cjs can spawn a stable path.
-  const candidates = [
-    path.join(RUNTIME_DIR, 'bin', 'python3'),
-    path.join(RUNTIME_DIR, 'bin', `python${PYTHON_VERSION}`)
-  ]
+  // Windows: a single python.exe sits at the runtime root. Unix: the standalone
+  // ships bin/python3 and bin/python3.12; prefer the versionless symlink so
+  // main.cjs can spawn a stable path. Mirror main.cjs createBundledBackend().
+  const candidates = IS_WINDOWS
+    ? [path.join(RUNTIME_DIR, 'python.exe')]
+    : [path.join(RUNTIME_DIR, 'bin', 'python3'), path.join(RUNTIME_DIR, 'bin', `python${PYTHON_VERSION}`)]
   return candidates.find(fs.existsSync) || candidates[0]
 }
 

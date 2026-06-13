@@ -97,6 +97,12 @@
     "unified": "^11.0.5",
     "unist-util-visit-parents": "^6.0.2",
     "vfile": "^6.0.3",
+    "axios": "^1.7.0",
+    "react-hot-toast": "^2.4.1",
+    "react-icons": "^5.0.1",
+    "react-markdown": "^9.0.0",
+    "reactflow": "^11.11.4",
+    "remark-gfm": "^4.0.0",
     "web-haptics": "^0.0.6"
   },
   "devDependencies": {

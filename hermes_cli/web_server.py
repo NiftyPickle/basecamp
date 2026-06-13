@@ -393,6 +393,12 @@ from hermes_cli.studio.routes import register_studio_routes
 
 register_studio_routes(app)
 
+# Vibe-Workflow MUAPI proxy routes (node-based workflow builder). Auth-gated
+# via /api/ like studio; transparent passthroughs to api.muapi.ai/workflow|app.
+from hermes_cli.vibe.routes import register_vibe_routes
+
+register_vibe_routes(app)
+
 from hermes_cli.local_llm.routes import register_local_llm_routes
 
 register_local_llm_routes(app)

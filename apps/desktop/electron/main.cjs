@@ -2068,10 +2068,12 @@ function createBundledBackend(dashboardArgs) {
   if (!resourcesPath) return null
   const backendRoot = path.join(resourcesPath, 'backend')
   const src = path.join(backendRoot, 'src')
-  const python =
-    [path.join(backendRoot, 'runtime', 'bin', 'python3'), path.join(backendRoot, 'runtime', 'bin', 'python3.12')].find(
-      fileExists
-    ) || null
+  // Windows ships a single python.exe at the runtime root; Unix ships
+  // bin/python3{,.12}. Must mirror scripts/stage-backend.cjs runtimePython().
+  const pythonCandidates = IS_WINDOWS
+    ? [path.join(backendRoot, 'runtime', 'python.exe')]
+    : [path.join(backendRoot, 'runtime', 'bin', 'python3'), path.join(backendRoot, 'runtime', 'bin', 'python3.12')]
+  const python = pythonCandidates.find(fileExists) || null
   if (!python || !directoryExists(src) || !fileExists(path.join(src, 'hermes_cli', 'main.py'))) {
     return null
   }

@@ -85,7 +85,7 @@ import {
   sessionPinId
 } from '@/store/session'
 
-import { type AppView, ARTIFACTS_ROUTE, MESSAGING_ROUTE, SKILLS_ROUTE, STUDIO_ROUTE } from '../../routes'
+import { type AppView, ARTIFACTS_ROUTE, FLOW_ROUTE, MESSAGING_ROUTE, SKILLS_ROUTE, STUDIO_ROUTE } from '../../routes'
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
 import type { SidebarNavItem } from '../../types'
 
@@ -116,6 +116,7 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     route: SKILLS_ROUTE
   },
   { id: 'studio', label: '', icon: props => <Codicon name="sparkle" {...props} />, route: STUDIO_ROUTE },
+  { id: 'flow', label: '', icon: props => <Codicon name="type-hierarchy-sub" {...props} />, route: FLOW_ROUTE },
   { id: 'messaging', label: '', icon: props => <Codicon name="comment" {...props} />, route: MESSAGING_ROUTE },
   { id: 'artifacts', label: '', icon: props => <Codicon name="files" {...props} />, route: ARTIFACTS_ROUTE }
 ]
@@ -761,6 +762,7 @@ export function ChatSidebar({
                 const active =
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'studio' && currentView === 'studio') ||
+                  (item.id === 'flow' && currentView === 'flow') ||
                   (item.id === 'messaging' && currentView === 'messaging') ||
                   (item.id === 'artifacts' && currentView === 'artifacts')
 

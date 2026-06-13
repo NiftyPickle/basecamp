@@ -92,6 +92,9 @@ class MuapiHttpClient:
     def post(self, path: str, payload=None):
         return self._request("POST", path, json_body=payload or {})
 
+    def delete(self, path: str):
+        return self._request("DELETE", path)
+
     def submit_model(self, slug: str, payload: dict) -> dict:
         """POST /api/v1/<slug>; return {'request_id': str}."""
         if not (isinstance(slug, str) and _SLUG_RE.fullmatch(slug)):

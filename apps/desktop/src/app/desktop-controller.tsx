@@ -115,6 +115,7 @@ const ProfilesView = lazy(async () => ({ default: (await import('./profiles')).P
 const SettingsView = lazy(async () => ({ default: (await import('./settings')).SettingsView }))
 const SkillsView = lazy(async () => ({ default: (await import('./skills')).SkillsView }))
 const StudioView = lazy(async () => ({ default: (await import('./studio')).StudioView }))
+const VibeView = lazy(async () => ({ default: (await import('./vibe')).VibeView }))
 
 // Latest cron-job sessions surfaced in the collapsed "Cron jobs" section. The
 // Cron sessions are written by a background scheduler tick (the desktop
@@ -938,6 +939,14 @@ export function DesktopController() {
               </Suspense>
             }
             path="studio"
+          />
+          <Route
+            element={
+              <Suspense fallback={null}>
+                <VibeView setStatusbarItemGroup={setStatusbarItemGroup} />
+              </Suspense>
+            }
+            path="flow"
           />
           <Route element={null} path="cron" />
           <Route element={null} path="profiles" />

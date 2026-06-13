@@ -1,0 +1,63 @@
+name: Release
+
+# Builds and publishes the Basecamp desktop app to a GitHub Release whenever a
+# v* tag is pushed. Each matrix entry builds natively on its own arch (no cross
+# compilation) so the staged CPython runtime and node-pty prebuilds match the
+# target. Wave-1 is unsigned: mac code signing is disabled and notarize.cjs
+# skips when no Apple creds are present, so no signing secrets are required.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macOS arm64
+            eb_args: --mac dmg zip --arm64
+          - os: macos-13
+            label: macOS x64
+            eb_args: --mac dmg zip --x64
+          - os: windows-latest
+            label: Windows x64
+            eb_args: --win nsis msi --x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: '0.11.8'
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Build renderer + stage backend
+        working-directory: apps/desktop
+        run: npm run build
+
+      - name: Package and publish to GitHub Release
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Wave-1 ships unsigned: skip auto-discovery of a Developer ID cert so
+          # electron-builder ad-hoc signs instead of failing on a missing cert.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder ${{ matrix.eb_args }} --publish always
