@@ -38,6 +38,7 @@ const {
   shouldRemoveAppBundle,
   uninstallArgsForMode
 } = require('./desktop-uninstall.cjs')
+const { appUpdaterAvailable, checkAppUpdates, applyAppUpdate } = require('./app-updater.cjs')
 const {
   authModeFromStatus,
   buildGatewayWsUrl,
@@ -5718,23 +5719,54 @@ ipcMain.handle('hermes:terminal:resize', (_event, id, size = {}) => {
 })
 ipcMain.handle('hermes:terminal:dispose', (_event, id) => disposeTerminalSession(String(id || '')))
 
-ipcMain.handle('hermes:updates:check', async () =>
-  checkUpdates().catch(error => ({
+// electron-updater logger shim -> rememberLog (no console noise in packaged).
+const updateFeedLogger = {
+  info: msg => rememberLog(`[app-updater] ${msg}`),
+  warn: msg => rememberLog(`[app-updater] WARN ${msg}`),
+  error: msg => rememberLog(`[app-updater] ERROR ${msg}`),
+  debug: () => {}
+}
+
+ipcMain.handle('hermes:updates:check', async () => {
+  // Packaged bundle builds ship a GitHub Releases feed (app-update.yml) and
+  // no .git checkout -- check that feed via electron-updater. Dev / source
+  // installs have a checkout and fall through to the git-pull path.
+  if (appUpdaterAvailable()) {
+    return checkAppUpdates({ logger: updateFeedLogger, currentVersion: app.getVersion() }).catch(error => ({
+      supported: true,
+      branch: 'stable',
+      error: 'check-failed',
+      message: error?.message || String(error),
+      fetchedAt: Date.now()
+    }))
+  }
+  return checkUpdates().catch(error => ({
     supported: true,
     branch: readDesktopUpdateConfig().branch,
     error: 'check-failed',
     message: error?.message || String(error),
     fetchedAt: Date.now()
   }))
-)
+})
 
-ipcMain.handle('hermes:updates:apply', async (_event, payload) =>
-  applyUpdates(payload || {}).catch(error => ({
+ipcMain.handle('hermes:updates:apply', async (_event, payload) => {
+  if (appUpdaterAvailable()) {
+    return applyAppUpdate({
+      logger: updateFeedLogger,
+      emitProgress: emitUpdateProgress,
+      openExternal: url => shell.openExternal(url)
+    }).catch(error => ({
+      ok: false,
+      error: 'apply-failed',
+      message: error?.message || String(error)
+    }))
+  }
+  return applyUpdates(payload || {}).catch(error => ({
     ok: false,
     error: 'apply-failed',
     message: error?.message || String(error)
   }))
-)
+})
 
 ipcMain.handle('hermes:updates:branch:get', async () => readDesktopUpdateConfig())
 
