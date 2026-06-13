@@ -101,6 +101,7 @@ dependencies = [
   # install rather than gating it behind an extra + a mid-session lazy install
   # (which deadlocked the CLI under prompt_toolkit — see #40490).
   "Pillow==12.2.0",
+  "python-multipart==0.0.27",
 ]
 
 [project.optional-dependencies]
