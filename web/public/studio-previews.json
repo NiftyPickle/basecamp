@@ -1,0 +1,58 @@
+{
+  "american-comic-style": {
+    "mediaType": "image",
+    "url": "/studio-previews/american-comic-style.jpg"
+  },
+  "angel-figurine": {
+    "mediaType": "image",
+    "url": "/studio-previews/angel-figurine.jpg"
+  },
+  "assassin-it": {
+    "mediaType": "video",
+    "url": "/studio-previews/assassin-it.mp4"
+  },
+  "cyberpunk-2077": {
+    "mediaType": "video",
+    "url": "/studio-previews/cyberpunk-2077.mp4"
+  },
+  "felt-keychain": {
+    "mediaType": "image",
+    "url": "/studio-previews/felt-keychain.jpg"
+  },
+  "film-noir": {
+    "mediaType": "video",
+    "url": "/studio-previews/film-noir.mp4"
+  },
+  "fire": {
+    "mediaType": "video",
+    "url": "/studio-previews/fire.mp4"
+  },
+  "glass-ball": {
+    "mediaType": "image",
+    "url": "/studio-previews/glass-ball.jpg"
+  },
+  "plastic-bubble-figure": {
+    "mediaType": "image",
+    "url": "/studio-previews/plastic-bubble-figure.jpg"
+  },
+  "pov-driving": {
+    "mediaType": "video",
+    "url": "/studio-previews/pov-driving.mp4"
+  },
+  "robotic-face-reveal": {
+    "mediaType": "video",
+    "url": "/studio-previews/robotic-face-reveal.mp4"
+  },
+  "samurai-it": {
+    "mediaType": "video",
+    "url": "/studio-previews/samurai-it.mp4"
+  },
+  "tsunami": {
+    "mediaType": "video",
+    "url": "/studio-previews/tsunami.mp4"
+  },
+  "vhs-footage": {
+    "mediaType": "video",
+    "url": "/studio-previews/vhs-footage.mp4"
+  }
+}
