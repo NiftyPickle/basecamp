@@ -1070,6 +1070,10 @@ export interface Translations {
     free: string
     freeTier: string
     priceTitle: string
+    freeMode: string
+    freeModeDesc: string
+    freeOnly: string
+    freeModeEmpty: string
   }
 
   modelVisibility: {

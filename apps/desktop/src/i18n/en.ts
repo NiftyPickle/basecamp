@@ -1398,7 +1398,12 @@ export const en: Translations = {
     proNeedsSubscription: 'Pro models need a paid Nous subscription.',
     free: 'Free',
     freeTier: 'Free tier',
-    priceTitle: 'Input / Output price per million tokens'
+    priceTitle: 'Input / Output price per million tokens',
+    freeMode: 'Free Mode',
+    freeModeDesc:
+      'Free models cost nothing to run. Great for everyday chat, drafting, quick questions, and learning without spending paid credits. For heavy reasoning or large coding tasks, a Pro model may give better results.',
+    freeOnly: 'Free only',
+    freeModeEmpty: 'No free models from your current providers. Add a provider with a free tier to use Free Mode.'
   },
 
   modelVisibility: {

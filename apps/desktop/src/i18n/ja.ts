@@ -1540,7 +1540,12 @@ export const ja = defineLocale({
     proNeedsSubscription: 'Pro モデルには有料の Nous サブスクリプションが必要です。',
     free: '無料',
     freeTier: '無料プラン',
-    priceTitle: '100 万トークンあたりの入力/出力価格'
+    priceTitle: '100 万トークンあたりの入力/出力価格',
+    freeMode: 'フリーモード',
+    freeModeDesc:
+      '無料モデルは実行コストがかかりません。日常のチャット、下書き、ちょっとした質問、学習に最適で、有料クレジットを消費しません。重い推論や大規模なコーディングには Pro モデルの方が良い結果になることがあります。',
+    freeOnly: '無料のみ',
+    freeModeEmpty: '現在のプロバイダーに無料モデルがありません。フリーモードを使うには無料プランのあるプロバイダーを追加してください。'
   },
 
   modelVisibility: {

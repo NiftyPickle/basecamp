@@ -1501,7 +1501,12 @@ export const zhHant = defineLocale({
     proNeedsSubscription: 'Pro 模型需要付費 Nous 訂閱。',
     free: '免費',
     freeTier: '免費層',
-    priceTitle: '每百萬 Token 的輸入/輸出價格'
+    priceTitle: '每百萬 Token 的輸入/輸出價格',
+    freeMode: '免費模式',
+    freeModeDesc:
+      '免費模型執行不花錢。適合日常聊天、起草、快速提問和學習，不消耗付費額度。對於重度推理或大型程式設計任務，Pro 模型可能效果更好。',
+    freeOnly: '僅免費',
+    freeModeEmpty: '目前的提供者沒有免費模型。新增帶免費層的提供者即可使用免費模式。'
   },
 
   modelVisibility: {

@@ -1578,7 +1578,12 @@ export const zh: Translations = {
     proNeedsSubscription: 'Pro 模型需要付费 Nous 订阅。',
     free: '免费',
     freeTier: '免费层',
-    priceTitle: '每百万 token 的输入/输出价格'
+    priceTitle: '每百万 token 的输入/输出价格',
+    freeMode: '免费模式',
+    freeModeDesc:
+      '免费模型运行不花钱。适合日常聊天、起草、快速提问和学习，不消耗付费额度。对于重度推理或大型编程任务，Pro 模型可能效果更好。',
+    freeOnly: '仅免费',
+    freeModeEmpty: '当前提供商没有免费模型。添加带免费层的提供商即可使用免费模式。'
   },
 
   modelVisibility: {

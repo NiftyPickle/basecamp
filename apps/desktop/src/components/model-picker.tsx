@@ -46,6 +46,9 @@ export function ModelPickerDialog({
   const { t } = useI18n()
   const copy = t.modelPicker
   const [persistGlobal, setPersistGlobal] = useState(!sessionId)
+  // Free Mode: surface a dedicated section of zero-cost models and, when
+  // toggled on, hide every paid provider group so the list is free-only.
+  const [freeOnly, setFreeOnly] = useState(false)
   // Own the search term so we can filter manually. cmdk's built-in
   // shouldFilter reorders items by its fuzzy-match score (≈alphabetical with
   // an empty query), which destroys the backend's curated order. We disable
@@ -120,6 +123,7 @@ export function ModelPickerDialog({
               currentModel={optionsModel || currentModel}
               currentProvider={optionsProvider || currentProvider}
               error={error}
+              freeOnly={freeOnly}
               loading={loading}
               onSelectModel={selectModel}
               providers={providers}
@@ -129,14 +133,20 @@ export function ModelPickerDialog({
         </Command>
 
         <DialogFooter className="flex-row items-center justify-between gap-3 bg-card p-3 sm:justify-between">
-          <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-muted-foreground">
-            <Checkbox
-              checked={persistGlobal || !sessionId}
-              disabled={!sessionId}
-              onCheckedChange={checked => setPersistGlobal(checked === true)}
-            />
-            {sessionId ? copy.persistGlobalSession : copy.persistGlobal}
-          </label>
+          <div className="flex flex-col gap-1.5">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={freeOnly} onCheckedChange={checked => setFreeOnly(checked === true)} />
+              {copy.freeOnly}
+            </label>
+            <label className="flex cursor-pointer select-none items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                checked={persistGlobal || !sessionId}
+                disabled={!sessionId}
+                onCheckedChange={checked => setPersistGlobal(checked === true)}
+              />
+              {sessionId ? copy.persistGlobalSession : copy.persistGlobal}
+            </label>
+          </div>
 
           <div className="flex items-center gap-2">
             <Button onClick={addProvider} variant="ghost">
@@ -159,7 +169,8 @@ function ModelResults({
   currentModel,
   currentProvider,
   onSelectModel,
-  search
+  search,
+  freeOnly
 }: {
   loading: boolean
   error: string | null
@@ -168,6 +179,7 @@ function ModelResults({
   currentProvider: string
   onSelectModel: (provider: ModelOptionProvider, model: string) => void
   search: string
+  freeOnly: boolean
 }) {
   const { t } = useI18n()
   const copy = t.modelPicker
@@ -203,9 +215,26 @@ function ModelResults({
   // "Add provider" footer button, which opens the full onboarding selector.
   const configured = providers.filter(p => (p.models ?? []).length > 0)
 
+  // Aggregate zero-cost models across every configured provider for the
+  // dedicated Free Mode section. A model is free when its pricing entry is
+  // flagged free and it isn't locked behind a paid subscription.
+  const freeEntries = configured.flatMap(provider => {
+    const unavailable = new Set(provider.unavailable_models ?? [])
+    return (provider.models ?? [])
+      .filter(m => matches(provider, m) && provider.pricing?.[m]?.free === true && !unavailable.has(m))
+      .map(model => ({ provider, model }))
+  })
+
   return (
     <>
-      {configured.map(provider => {
+      <FreeModeSection
+        currentModel={currentModel}
+        currentProvider={currentProvider}
+        entries={freeEntries}
+        onSelectModel={onSelectModel}
+      />
+      {!freeOnly &&
+        configured.map(provider => {
         // Preserve the backend's curated order — filter in place, no re-sort.
         const models = (provider.models ?? []).filter(m => matches(provider, m))
 
@@ -261,6 +290,77 @@ function ModelResults({
         )
       })}
     </>
+  )
+}
+
+// Dedicated Free Mode group: a short explainer plus every zero-cost model
+// aggregated across providers. Values are prefixed `free:` so they never
+// collide with the same model rendered inside its provider group below.
+function FreeModeSection({
+  entries,
+  currentModel,
+  currentProvider,
+  onSelectModel
+}: {
+  entries: { provider: ModelOptionProvider; model: string }[]
+  currentModel: string
+  currentProvider: string
+  onSelectModel: (provider: ModelOptionProvider, model: string) => void
+}) {
+  const { t } = useI18n()
+  const copy = t.modelPicker
+
+  return (
+    <CommandGroup
+      heading={
+        <span className="flex items-center gap-2">
+          <span>{copy.freeMode}</span>
+          <span className="rounded-sm bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+            {copy.free}
+          </span>
+        </span>
+      }
+    >
+      <div className="px-6 pb-2 pt-1 text-[0.66rem] leading-relaxed text-muted-foreground">{copy.freeModeDesc}</div>
+      {entries.length === 0 ? (
+        <div className="px-6 pb-2 text-xs text-muted-foreground">{copy.freeModeEmpty}</div>
+      ) : (
+        entries.map(({ provider, model }) => {
+          const isCurrent = model === currentModel && provider.slug === currentProvider
+
+          return (
+            <CommandItem
+              className={cn(
+                'flex items-center gap-2 pl-6 font-mono',
+                isCurrent &&
+                  'bg-primary text-primary-foreground data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground'
+              )}
+              key={`free:${provider.slug}:${model}`}
+              onSelect={() => onSelectModel(provider, model)}
+              value={`free:${provider.slug}:${model}`}
+            >
+              <span className="min-w-0 flex-1 truncate">{model}</span>
+              <span
+                className={cn(
+                  'shrink-0 text-[0.62rem] normal-case tracking-normal',
+                  isCurrent ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                )}
+              >
+                {provider.slug}
+              </span>
+              <span
+                className={cn(
+                  'shrink-0 rounded-sm px-1 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide',
+                  isCurrent ? 'bg-primary-foreground/20' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                )}
+              >
+                {copy.free}
+              </span>
+            </CommandItem>
+          )
+        })
+      )}
+    </CommandGroup>
   )
 }
 
