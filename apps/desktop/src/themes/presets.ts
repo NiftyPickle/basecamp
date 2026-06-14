@@ -98,36 +98,37 @@ export const nousTheme: DesktopTheme = {
   }
 }
 
-/** Deep blue-violet with cool accents. Matches the dashboard midnight theme. */
+/** Discord-style blurple on a deep midnight base. Default shipped appearance. */
 export const midnightTheme: DesktopTheme = {
   name: 'midnight',
   label: 'Midnight',
-  description: 'Deep blue-violet with cool accents',
+  description: 'Discord-style blurple on deep midnight',
   colors: {
-    background: '#08081c',
-    foreground: '#ddd6ff',
-    card: '#0d0d28',
-    cardForeground: '#ddd6ff',
-    muted: '#13133a',
-    mutedForeground: '#7c7ab0',
-    popover: '#0f0f2e',
-    popoverForeground: '#ddd6ff',
-    primary: '#ddd6ff',
-    primaryForeground: '#08081c',
-    secondary: '#1a1a4a',
-    secondaryForeground: '#c4bff0',
-    accent: '#1a1a44',
-    accentForeground: '#d0c8ff',
-    border: '#1e1e52',
-    input: '#1e1e52',
-    ring: '#8b80e8',
-    midground: '#8b80e8',
-    destructive: '#b03060',
-    destructiveForeground: '#fef2f2',
-    sidebarBackground: '#06061a',
-    sidebarBorder: '#12123a',
-    userBubble: '#14143a',
-    userBubbleBorder: '#242466'
+    background: '#16161f',
+    foreground: '#e8e6f5',
+    card: '#1c1c27',
+    cardForeground: '#e8e6f5',
+    muted: '#26263a',
+    mutedForeground: '#9b99c0',
+    popover: '#1c1c27',
+    popoverForeground: '#e8e6f5',
+    primary: '#5865f2',
+    primaryForeground: '#ffffff',
+    secondary: '#2b2d44',
+    secondaryForeground: '#c7c5e8',
+    accent: '#2a2a48',
+    accentForeground: '#d6d2ff',
+    border: '#2d2d48',
+    input: '#2d2d48',
+    ring: '#5865f2',
+    midground: '#5865f2',
+    composerRing: '#5865f2',
+    destructive: '#ed4245',
+    destructiveForeground: '#ffffff',
+    sidebarBackground: '#101019',
+    sidebarBorder: '#232338',
+    userBubble: '#2b2d52',
+    userBubbleBorder: '#40406a'
   },
   typography: {
     fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
@@ -362,4 +363,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'basecamp'
+export const DEFAULT_SKIN_NAME = 'midnight'
