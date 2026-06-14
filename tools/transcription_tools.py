@@ -1233,20 +1233,27 @@ def _transcribe_local_command(file_path: str, model_name: str) -> Dict[str, Any]
             # User-provided templates (env var) may contain shell syntax; auto-detected commands are safe for list mode.
             use_shell = bool(os.getenv(LOCAL_STT_COMMAND_ENV, "").strip())
             if use_shell:
-                subprocess.run(command, shell=True, check=True, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
+                result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
             else:
-                subprocess.run(shlex.split(command), check=True, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
-            
+                result = subprocess.run(shlex.split(command), check=True, capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL)
 
+            # Prefer a written transcript file (most whisper CLIs emit one), but
+            # fall back to stdout. Some builds/shims print the transcript and
+            # write no file, which previously failed hard even though the text
+            # was on stdout. Mirrors _read_command_stt_output's file-then-stdout
+            # preference for the user-declared command-provider path.
+            transcript_text = ""
             txt_files = sorted(Path(output_dir).glob("*.txt"))
-            if not txt_files:
+            if txt_files:
+                transcript_text = txt_files[0].read_text(encoding="utf-8").strip()
+            if not transcript_text and result.stdout:
+                transcript_text = result.stdout.strip()
+            if not transcript_text:
                 return {
                     "success": False,
                     "transcript": "",
-                    "error": "Local STT command completed but did not produce a .txt transcript",
+                    "error": "Local STT command completed but produced no transcript (no .txt file and no stdout)",
                 }
-
-            transcript_text = txt_files[0].read_text(encoding="utf-8").strip()
             logger.info(
                 "Transcribed %s via local STT command (%s, %d chars)",
                 Path(file_path).name,

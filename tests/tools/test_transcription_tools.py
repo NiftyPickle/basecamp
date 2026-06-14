@@ -425,6 +425,93 @@ class TestTranscribeLocalCommand:
         assert result["transcript"] == "hello from local command"
         assert result["provider"] == "local_command"
 
+    def test_command_falls_back_to_stdout_when_no_txt(self, monkeypatch, sample_ogg, tmp_path):
+        """CLIs that print the transcript but write no .txt must still succeed."""
+        out_dir = tmp_path / "local-out-stdout"
+        out_dir.mkdir()
+
+        monkeypatch.setenv(
+            "HERMES_LOCAL_STT_COMMAND",
+            "whisper {input_path} --model {model} --output_dir {output_dir} --language {language}",
+        )
+        monkeypatch.setenv("HERMES_LOCAL_STT_LANGUAGE", "en")
+
+        def fake_tempdir(prefix=None):
+            class _TempDir:
+                def __enter__(self_inner):
+                    return str(out_dir)
+
+                def __exit__(self_inner, exc_type, exc, tb):
+                    return False
+
+            return _TempDir()
+
+        def fake_run(cmd, *args, **kwargs):
+            if isinstance(cmd, list):
+                output_path = cmd[-1]
+                with open(output_path, "wb") as handle:
+                    handle.write(b"RIFF....WAVEfmt ")
+                return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+            # Command succeeds but writes NO .txt — transcript only on stdout.
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="transcript from stdout\n", stderr=""
+            )
+
+        monkeypatch.setattr("tools.transcription_tools.tempfile.TemporaryDirectory", fake_tempdir)
+        monkeypatch.setattr("tools.transcription_tools._find_ffmpeg_binary", lambda: "/opt/homebrew/bin/ffmpeg")
+        monkeypatch.setattr("tools.transcription_tools.subprocess.run", fake_run)
+
+        from tools.transcription_tools import _transcribe_local_command
+
+        result = _transcribe_local_command(sample_ogg, "base")
+
+        assert result["success"] is True
+        assert result["transcript"] == "transcript from stdout"
+        assert result["provider"] == "local_command"
+
+    def test_command_fails_when_no_txt_and_no_stdout(self, monkeypatch, sample_ogg, tmp_path):
+        """No file AND no stdout is a genuine failure with a clear message."""
+        out_dir = tmp_path / "local-out-empty"
+        out_dir.mkdir()
+
+        monkeypatch.setenv(
+            "HERMES_LOCAL_STT_COMMAND",
+            "whisper {input_path} --model {model} --output_dir {output_dir} --language {language}",
+        )
+        monkeypatch.setenv("HERMES_LOCAL_STT_LANGUAGE", "en")
+
+        def fake_tempdir(prefix=None):
+            class _TempDir:
+                def __enter__(self_inner):
+                    return str(out_dir)
+
+                def __exit__(self_inner, exc_type, exc, tb):
+                    return False
+
+            return _TempDir()
+
+        def fake_run(cmd, *args, **kwargs):
+            if isinstance(cmd, list):
+                output_path = cmd[-1]
+                with open(output_path, "wb") as handle:
+                    handle.write(b"RIFF....WAVEfmt ")
+                return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr("tools.transcription_tools.tempfile.TemporaryDirectory", fake_tempdir)
+        monkeypatch.setattr("tools.transcription_tools._find_ffmpeg_binary", lambda: "/opt/homebrew/bin/ffmpeg")
+        monkeypatch.setattr("tools.transcription_tools.subprocess.run", fake_run)
+
+        from tools.transcription_tools import _transcribe_local_command
+
+        result = _transcribe_local_command(sample_ogg, "base")
+
+        assert result["success"] is False
+        assert result["transcript"] == ""
+        assert "no transcript" in result["error"]
+
 
 # ============================================================================
 # _transcribe_local — additional tests
