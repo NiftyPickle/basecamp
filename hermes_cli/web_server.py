@@ -2404,15 +2404,22 @@ def get_recommended_default_model(provider: str = ""):
             _log.exception("GET /api/model/recommended-default (nous) failed")
             return {"provider": "nous", "model": "", "free_tier": None}
 
-    # Non-Nous: first curated model for the provider, matching prior behaviour.
+    # Non-Nous: cost-safe curated default for the provider. Metered aggregators
+    # (OpenRouter) carry an explicit low-cost override so onboarding does not
+    # seed the flagship; everyone else falls back to the first curated model.
     try:
         from hermes_cli.inventory import build_models_payload, load_picker_context
+        from hermes_cli.models import recommended_onboarding_default
 
         payload = build_models_payload(load_picker_context(), max_models=50)
         for row in payload.get("providers", []):
             if str(row.get("slug", "")).lower() == slug:
-                models = row.get("models") or []
-                return {"provider": slug, "model": models[0] if models else "", "free_tier": None}
+                models = [str(m) for m in (row.get("models") or [])]
+                return {
+                    "provider": slug,
+                    "model": recommended_onboarding_default(slug, models),
+                    "free_tier": None,
+                }
         return {"provider": slug, "model": "", "free_tier": None}
     except Exception:
         _log.exception("GET /api/model/recommended-default failed")

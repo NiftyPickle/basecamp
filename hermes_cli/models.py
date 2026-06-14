@@ -1250,6 +1250,33 @@ _PROVIDER_SILENT_DEFAULT_OVERRIDES: dict[str, str] = {
 }
 
 
+# Cost-safe defaults the GUI onboarding model-confirm card seeds itself with for
+# metered aggregators whose curated picker lists most-capable (= most expensive)
+# first. Without this a fresh OpenRouter user silently lands on the flagship
+# (opus, $5/$25 per Mtok) instead of a balanced default. The override is only
+# applied when it actually appears in the provider's resolved picker list, so a
+# stale id can never blank the default. The flagship still sorts first in the
+# picker for users who deliberately choose it.
+_PROVIDER_ONBOARDING_DEFAULT_OVERRIDES: dict[str, str] = {
+    "openrouter": "anthropic/claude-sonnet-4.6",
+}
+
+
+def recommended_onboarding_default(provider: str, models: list[str]) -> str:
+    """Pick a cost-safe onboarding default from a provider's curated model list.
+
+    Returns the configured override for ``provider`` when it appears in
+    ``models``; otherwise the first curated model (prior behaviour). Returns ""
+    when ``models`` is empty. Pure and network-free - the caller already
+    resolved ``models`` from the picker payload.
+    """
+    slug = (provider or "").strip().lower()
+    override = _PROVIDER_ONBOARDING_DEFAULT_OVERRIDES.get(slug)
+    if override and override in models:
+        return override
+    return models[0] if models else ""
+
+
 def get_default_model_for_provider(provider: str) -> str:
     """Return a cost-safe default model for a provider, or "" if unknown.
 

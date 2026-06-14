@@ -1841,6 +1841,53 @@ class TestWebServerEndpoints:
         assert data["model"] == ""
         assert data["free_tier"] is None
 
+    def test_recommended_default_openrouter_seeds_sonnet_not_flagship(self, monkeypatch):
+        """OpenRouter onboarding must seed the balanced sonnet default, not the
+        flagship opus that sorts first in the curated picker (cost safety for
+        wave-1 testers metered per token)."""
+        import hermes_cli.inventory as inventory_mod
+
+        monkeypatch.setattr(inventory_mod, "load_picker_context", lambda: object())
+        monkeypatch.setattr(
+            inventory_mod, "build_models_payload",
+            lambda ctx, max_models=50: {
+                "providers": [
+                    {
+                        "slug": "openrouter",
+                        "models": [
+                            "anthropic/claude-opus-4.8",
+                            "anthropic/claude-sonnet-4.6",
+                            "anthropic/claude-haiku-4.5",
+                        ],
+                    }
+                ]
+            },
+        )
+
+        resp = self.client.get("/api/model/recommended-default?provider=openrouter")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["provider"] == "openrouter"
+        assert data["model"] == "anthropic/claude-sonnet-4.6"
+        assert data["free_tier"] is None
+
+    def test_recommended_default_unknown_provider_returns_empty(self, monkeypatch):
+        """A provider absent from the picker payload resolves to empty, not 500."""
+        import hermes_cli.inventory as inventory_mod
+
+        monkeypatch.setattr(inventory_mod, "load_picker_context", lambda: object())
+        monkeypatch.setattr(
+            inventory_mod, "build_models_payload",
+            lambda ctx, max_models=50: {"providers": []},
+        )
+
+        resp = self.client.get("/api/model/recommended-default?provider=ghostprovider")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["provider"] == "ghostprovider"
+        assert data["model"] == ""
+        assert data["free_tier"] is None
+
 
 # ---------------------------------------------------------------------------
 # _build_schema_from_config tests

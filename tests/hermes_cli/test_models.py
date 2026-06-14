@@ -907,3 +907,40 @@ class TestNousRecommendedModels:
             patch("hermes_cli.models.check_nous_free_tier", side_effect=RuntimeError("boom")),
         ):
             assert get_nous_recommended_aux_model(vision=False) == "paid-model"
+
+
+class TestRecommendedOnboardingDefault:
+    """Cost-safe onboarding default picked from a provider's curated model list."""
+
+    def test_openrouter_override_returns_sonnet_when_present(self):
+        """OpenRouter onboarding seeds sonnet, not the flagship opus first entry."""
+        from hermes_cli.models import recommended_onboarding_default
+        models = [
+            "anthropic/claude-opus-4.8",
+            "anthropic/claude-sonnet-4.6",
+            "anthropic/claude-haiku-4.5",
+        ]
+        assert recommended_onboarding_default("openrouter", models) == "anthropic/claude-sonnet-4.6"
+
+    def test_provider_slug_is_case_insensitive(self):
+        """Mixed-case/whitespace provider still resolves the override."""
+        from hermes_cli.models import recommended_onboarding_default
+        models = ["anthropic/claude-opus-4.8", "anthropic/claude-sonnet-4.6"]
+        assert recommended_onboarding_default("  OpenRouter ", models) == "anthropic/claude-sonnet-4.6"
+
+    def test_override_ignored_when_not_in_list(self):
+        """Stale override id can never blank the default; fall back to first."""
+        from hermes_cli.models import recommended_onboarding_default
+        models = ["anthropic/claude-opus-4.8", "anthropic/claude-haiku-4.5"]
+        assert recommended_onboarding_default("openrouter", models) == "anthropic/claude-opus-4.8"
+
+    def test_unconfigured_provider_returns_first(self):
+        """Providers without an override keep prior behaviour (first curated)."""
+        from hermes_cli.models import recommended_onboarding_default
+        models = ["model-a", "model-b"]
+        assert recommended_onboarding_default("someprovider", models) == "model-a"
+
+    def test_empty_list_returns_empty_string(self):
+        """No curated models resolves to an empty default, not an error."""
+        from hermes_cli.models import recommended_onboarding_default
+        assert recommended_onboarding_default("openrouter", []) == ""
