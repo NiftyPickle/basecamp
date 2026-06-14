@@ -2485,12 +2485,15 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "MUAPI_API_KEY": {
-        "description": "MUAPI media generation key (image and video models)",
-        "prompt": "MUAPI API key",
+        "description": "MuAPI media generation key (powers Studio and the Flow Builder image/video/audio nodes)",
+        "prompt": "MuAPI API key",
         "url": "https://muapi.ai",
         "password": True,
-        "category": "media",
-        "advanced": True,
+        # "tool" so it surfaces on Settings -> Tools & Keys -> Tools where the
+        # user can paste it. The former "media" category had no Settings view,
+        # so the key was unconfigurable and Studio/Flow Builder always failed
+        # with "MUAPI_API_KEY is not set". Not advanced: it gates whole pages.
+        "category": "tool",
     },
     "GOOGLE_API_KEY": {
         "description": "Google AI Studio API key (also recognized as GEMINI_API_KEY)",

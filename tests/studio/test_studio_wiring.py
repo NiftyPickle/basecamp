@@ -19,6 +19,22 @@ def test_muapi_key_registered_in_optional_env_vars():
     assert entry.get("password") is True
 
 
+def test_muapi_key_category_has_a_settings_view():
+    """The MuAPI key must live in a category the desktop Settings UI renders.
+
+    The Keys page only surfaces ``provider`` (providers-settings) and
+    ``tool``/``setting``/``messaging`` (keys-settings). The legacy ``media``
+    category had no view, so the key was unconfigurable and Studio/Flow Builder
+    always failed with "MUAPI_API_KEY is not set". Guard against regressing to
+    an unrendered category.
+    """
+    from hermes_cli.config import OPTIONAL_ENV_VARS
+
+    renderable = {"provider", "tool", "setting", "messaging"}
+    category = OPTIONAL_ENV_VARS["MUAPI_API_KEY"].get("category")
+    assert category in renderable, f"MUAPI key category {category!r} has no Settings view"
+
+
 def test_studio_routes_attached_to_dashboard_app():
     from hermes_cli.web_server import app
 
