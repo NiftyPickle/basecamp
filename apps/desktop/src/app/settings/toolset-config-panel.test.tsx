@@ -101,8 +101,13 @@ describe('ToolsetConfigPanel', () => {
     const elevenlabs = await screen.findByRole('button', { name: /ElevenLabs/ })
     fireEvent.click(elevenlabs)
 
-    // Click "Set" to reveal the input for the unset key.
-    fireEvent.click(await screen.findByRole('button', { name: 'Set' }))
+    // Open the env-var actions menu, then click "Set" to reveal the input for
+    // the unset key. (Keyboard-opening the Radix dropdown is the reliable path
+    // under jsdom, which lacks pointer-event support.)
+    fireEvent.keyDown(await screen.findByRole('button', { name: 'Actions for ELEVENLABS_API_KEY' }), {
+      key: 'Enter'
+    })
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Set' }))
 
     const input = await screen.findByPlaceholderText('ElevenLabs API key')
     fireEvent.change(input, { target: { value: 'sk-test-123' } })

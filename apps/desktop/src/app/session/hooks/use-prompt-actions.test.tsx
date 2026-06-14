@@ -67,6 +67,19 @@ function Harness({
   const selectedStoredSessionIdRef: MutableRefObject<string | null> = { current: RUNTIME_SESSION_ID }
   const localBusyRef = busyRef ?? { current: false }
 
+  // Mirror the real updateSessionState: thread the previously persisted state
+  // through each updater. The first call starts from interrupted:true (a
+  // leftover stop) so we can prove the fresh submit clears it; later calls
+  // (e.g. the message-rewrite pass) must see the cleared value, not a re-seed.
+  const sessionStateRef: { current: Record<string, unknown> } = {
+    current: {
+      messages: [],
+      busy: false,
+      awaitingResponse: false,
+      interrupted: true
+    }
+  }
+
   const actions = usePromptActions({
     activeSessionId: RUNTIME_SESSION_ID,
     activeSessionIdRef,
@@ -80,13 +93,8 @@ function Harness({
     startFreshSessionDraft: () => undefined,
     sttEnabled: false,
     updateSessionState: (_sessionId, updater) => {
-      // Seed with interrupted:true so we can prove a fresh submit clears it.
-      const next = updater({
-        messages: [],
-        busy: false,
-        awaitingResponse: false,
-        interrupted: true
-      } as never) as unknown as Record<string, unknown>
+      const next = updater(sessionStateRef.current as never) as unknown as Record<string, unknown>
+      sessionStateRef.current = next
       onSeedState?.(next)
 
       return next as never

@@ -178,6 +178,17 @@ export function useGatewayBoot({
       // 1s, 2s, 4s … capped at 15s.
       const delay = Math.min(15_000, 1_000 * 2 ** Math.min(reconnectAttempt, 4))
       reconnectAttempt += 1
+
+      // Escape hatch: after a prolonged drop (>= 6 failed attempts, ~45s) the
+      // remote isn't coming back on its own. Surface a recoverable boot error so
+      // the BootFailureOverlay (Use local gateway / Sign in / Retry) becomes
+      // reachable instead of the latched fullscreen CONNECTING overlay. We keep
+      // scheduling, so a later successful reconnect clears it via
+      // completeDesktopBoot() in the 'open' state handler.
+      if (reconnectAttempt >= 6 && !$desktopBoot.get().error) {
+        failDesktopBoot(translateNow('boot.errors.gatewayUnreachable'))
+      }
+
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null
         void attemptReconnect()

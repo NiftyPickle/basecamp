@@ -638,8 +638,10 @@ describe('assistant-ui streaming renderer', () => {
   it('renders an incomplete streaming fenced code block as a code card', async () => {
     const { container } = render(<RunningMessageHarness message={assistantMessage('```ts\nconst answer = 42\n')} />)
 
+    // The smooth character-reveal drains into the code-card body during
+    // streaming; wait for the body to fill rather than asserting synchronously.
     await waitFor(() => {
-      expect(container.querySelector('[data-slot="code-card"]')).toBeTruthy()
+      expect(container.querySelector('[data-slot="code-card-body"]')?.textContent).toContain('const answer = 42')
     })
 
     expect(container.textContent).toContain('const answer = 42')
@@ -648,12 +650,11 @@ describe('assistant-ui streaming renderer', () => {
 
   it('renders an incomplete streaming reasoning fenced code block as a code card', async () => {
     const { container } = render(<RunningReasoningHarness />)
-    const ui = within(container)
 
-    fireEvent.click(ui.getByRole('button', { name: /thinking/i }))
-
+    // A running reasoning disclosure auto-opens its live preview, so the code
+    // card streams in without a manual expand click.
     await waitFor(() => {
-      expect(container.querySelector('[data-slot="code-card"]')).toBeTruthy()
+      expect(container.querySelector('[data-slot="code-card-body"]')?.textContent).toContain('const answer = 42')
     })
 
     expect(container.querySelector('[data-slot="aui_reasoning-text"]')?.textContent).toContain('const answer = 42')
