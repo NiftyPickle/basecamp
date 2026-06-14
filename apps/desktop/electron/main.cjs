@@ -5756,7 +5756,8 @@ ipcMain.handle('hermes:updates:apply', async (_event, payload) => {
     return applyAppUpdate({
       logger: updateFeedLogger,
       emitProgress: emitUpdateProgress,
-      openExternal: url => shell.openExternal(url)
+      openExternal: url => shell.openExternal(url),
+      app
     }).catch(error => ({
       ok: false,
       error: 'apply-failed',

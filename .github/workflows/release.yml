@@ -77,3 +77,21 @@ jobs:
           # electron-builder ad-hoc signs instead of failing on a missing cert.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder ${{ matrix.eb_args }} --publish always
+
+  publish-release:
+    name: Publish release (un-draft)
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # electron-builder uploads each matrix artifact to the GitHub release, but
+      # the release can remain a draft -- a draft release 404s the auto-update
+      # feed (latest-mac.yml / latest.yml), so every client's update check fails.
+      # Force the tag's release to published once all artifacts are uploaded.
+      - name: Mark release published
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest

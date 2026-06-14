@@ -240,6 +240,7 @@ const NodeFlow = ({ initialNodeSchemas, initialWorkflowData }) => {
   const [runId, setRunId] = useState(initialState?.metadata?.runId || null);
   const [hasFit, setHasFit] = useState(false);
   const [nodeSchemas, setNodeSchemas] = useState(initialNodeSchemas || {});
+  const [schemaError, setSchemaError] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [draggedEdgeInfo, setDraggedEdgeInfo] = useState(null);
@@ -306,8 +307,20 @@ const NodeFlow = ({ initialNodeSchemas, initialWorkflowData }) => {
   useEffect(() => {
     if (!initialNodeSchemas) {
       axios.get(`/api/workflow/${id}/node-schemas`)
-        .then(res => setNodeSchemas(res.data || {}))
-        .catch(err => console.error("Failed to load node schemas", err));
+        .then(res => {
+          setNodeSchemas(res.data || {});
+          setSchemaError(null);
+        })
+        .catch(err => {
+          console.error("Failed to load node schemas", err);
+          const status = err?.response?.status;
+          const message = err?.response?.data?.message || "";
+          const isKeyMissing =
+            status === 401 ||
+            err?.response?.data?.error_code === "auth" ||
+            message.includes("MUAPI_API_KEY");
+          setSchemaError({ isKeyMissing, message });
+        });
     }
 
     const handleMouseMove = (e) => {
@@ -2098,6 +2111,42 @@ const NodeFlow = ({ initialNodeSchemas, initialWorkflowData }) => {
         <div className="fixed inset-0 flex items-center justify-center gap-2 bg-black w-full h-full z-20">
           <div className="w-6 h-6 rounded-full border-[4px] border-white border-t-transparent animate-spin"></div>
           <div className="text-white text-xl font-bold">Loading...</div>
+        </div>
+      )}
+      {!isRestoring && schemaError && !nodeSchemas?.categories && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/90 w-full h-full z-30 p-6">
+          <div className="max-w-md rounded-xl border border-gray-700 bg-[#1b1c1e] p-6 text-center">
+            {schemaError.isKeyMissing ? (
+              <>
+                <div className="text-white text-lg font-semibold mb-2">MuAPI key required</div>
+                <p className="text-sm text-[#adacaa] mb-4">
+                  The Flow Builder generates images, video, and audio through MuAPI. Add your
+                  MuAPI API key to start building workflows.
+                </p>
+                <p className="text-xs text-[#7d7c7a]">
+                  Open Settings &rarr; Tools &amp; Keys, paste your key under MuAPI, then reopen
+                  the Flow Builder. Get a key at{" "}
+                  <a href="https://muapi.ai" className="underline text-[#adacaa] hover:text-white">
+                    muapi.ai
+                  </a>.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-white text-lg font-semibold mb-2">Could not load the Flow Builder</div>
+                <p className="text-sm text-[#adacaa] mb-4">
+                  The node catalog failed to load. Check that the backend is running, then reload.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="rounded-md border border-gray-600 px-4 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  Reload
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
       <div className="flex items-center justify-center absolute top-0 z-20 bg-[#151618] w-full py-3 border-b border-gray-800">
