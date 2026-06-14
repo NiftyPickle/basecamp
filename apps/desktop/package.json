@@ -2,7 +2,7 @@
   "name": "hermes",
   "productName": "Basecamp",
   "private": true,
-  "version": "0.15.5",
+  "version": "0.15.6",
   "description": "Basecamp desktop app.",
   "author": "Nous Research",
   "type": "module",
