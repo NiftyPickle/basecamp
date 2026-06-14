@@ -104,3 +104,62 @@ def test_delete_chat_group_removes_group_and_members(db):
 
 def test_delete_unknown_group_returns_false(db):
     assert db.delete_chat_group("nope") is False
+
+
+def test_create_chat_group_with_description_and_instructions(db):
+    g = db.create_chat_group("P", now=1.0, description="desc", instructions="do X")
+    assert g["description"] == "desc"
+    assert g["instructions"] == "do X"
+    listed = db.list_chat_groups()[0]
+    assert listed["description"] == "desc"
+    assert listed["instructions"] == "do X"
+
+
+def test_create_chat_group_defaults_blank_description_instructions(db):
+    g = db.create_chat_group("P", now=1.0)
+    assert g["description"] == ""
+    assert g["instructions"] == ""
+
+
+def test_update_chat_group_changes_description_and_instructions(db):
+    g = db.create_chat_group("P", now=1.0)
+    u = db.update_chat_group(g["id"], now=2.0, description="d2", instructions="i2")
+    assert u is not None
+    assert u["description"] == "d2"
+    assert u["instructions"] == "i2"
+    assert u["name"] == "P"  # unchanged
+    assert u["updated_at"] == 2.0
+
+
+def test_update_chat_group_only_touches_provided_fields(db):
+    g = db.create_chat_group("P", now=1.0, description="keep", instructions="keepi")
+    u = db.update_chat_group(g["id"], now=2.0, name="P2")
+    assert u["name"] == "P2"
+    assert u["description"] == "keep"
+    assert u["instructions"] == "keepi"
+
+
+def test_update_chat_group_unknown_returns_none(db):
+    assert db.update_chat_group("nope", now=1.0, name="x") is None
+
+
+def test_rename_chat_group_still_works(db):
+    g = db.create_chat_group("Old", now=1.0)
+    u = db.rename_chat_group(g["id"], "New", now=2.0)
+    assert u is not None and u["name"] == "New"
+
+
+def test_instructions_for_session_returns_group_instructions(db):
+    g = db.create_chat_group("P", now=1.0, instructions="follow the style guide")
+    db.assign_conversation(g["id"], "sess-1", now=2.0)
+    assert db.instructions_for_session("sess-1") == "follow the style guide"
+
+
+def test_instructions_for_session_blank_when_ungrouped(db):
+    assert db.instructions_for_session("sess-x") == ""
+
+
+def test_instructions_for_session_blank_when_group_has_no_instructions(db):
+    g = db.create_chat_group("P", now=1.0)
+    db.assign_conversation(g["id"], "sess-1", now=2.0)
+    assert db.instructions_for_session("sess-1") == ""

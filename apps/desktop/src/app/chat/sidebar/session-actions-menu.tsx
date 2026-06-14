@@ -1,3 +1,4 @@
+import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -20,7 +21,10 @@ import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { exportSession } from '@/lib/session-export'
 import { notify, notifyError } from '@/store/notifications'
+import { $projects } from '@/store/projects'
 import { setSessions } from '@/store/session'
+
+import { AssignProjectDialog } from './project-dialog'
 
 interface SessionActions {
   sessionId: string
@@ -46,7 +50,9 @@ interface ItemSpec {
 function useSessionActions({ sessionId, title, pinned = false, profile, onPin, onArchive, onDelete }: SessionActions) {
   const { t } = useI18n()
   const r = t.sidebar.row
+  const projects = useStore($projects)
   const [renameOpen, setRenameOpen] = useState(false)
+  const [assignOpen, setAssignOpen] = useState(false)
 
   const items: ItemSpec[] = [
     {
@@ -56,6 +62,15 @@ function useSessionActions({ sessionId, title, pinned = false, profile, onPin, o
       onSelect: () => {
         triggerHaptic('selection')
         onPin?.()
+      }
+    },
+    {
+      disabled: !sessionId || projects.length === 0,
+      icon: 'folder',
+      label: t.sidebar.projects.addToProject,
+      onSelect: () => {
+        triggerHaptic('selection')
+        setAssignOpen(true)
       }
     },
     {
@@ -117,13 +132,21 @@ function useSessionActions({ sessionId, title, pinned = false, profile, onPin, o
     ))
 
   const renameDialog = (
-    <RenameSessionDialog
-      currentTitle={title}
-      onOpenChange={setRenameOpen}
-      open={renameOpen}
-      profile={profile}
-      sessionId={sessionId}
-    />
+    <>
+      <RenameSessionDialog
+        currentTitle={title}
+        onOpenChange={setRenameOpen}
+        open={renameOpen}
+        profile={profile}
+        sessionId={sessionId}
+      />
+      <AssignProjectDialog
+        onOpenChange={setAssignOpen}
+        open={assignOpen}
+        projects={projects}
+        sessionId={sessionId}
+      />
+    </>
   )
 
   return { renameDialog, renderItems }

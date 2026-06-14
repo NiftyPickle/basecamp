@@ -727,3 +727,69 @@ export function getElevenLabsVoices(): Promise<ElevenLabsVoicesResponse> {
     path: '/api/audio/elevenlabs/voices'
   })
 }
+
+// Projects (chat groups). A project bundles related conversations and can carry
+// shared instructions that steer every chat inside it. A session belongs to at
+// most one project. Mirrors the dashboard's chat-group endpoints.
+export interface ChatGroup {
+  id: string
+  name: string
+  description: string
+  instructions: string
+  position: number
+  created_at: number
+  updated_at: number
+  session_ids: string[]
+}
+
+export async function listChatGroups(): Promise<ChatGroup[]> {
+  const { groups } = await window.hermesDesktop.api<{ groups: ChatGroup[] }>({
+    path: '/api/chat/groups'
+  })
+
+  return groups ?? []
+}
+
+export function createChatGroup(body: {
+  description?: string
+  instructions?: string
+  name: string
+}): Promise<ChatGroup> {
+  return window.hermesDesktop.api<ChatGroup>({
+    path: '/api/chat/groups',
+    method: 'POST',
+    body
+  })
+}
+
+export function updateChatGroup(
+  id: string,
+  updates: { description?: string; instructions?: string; name?: string; position?: number }
+): Promise<ChatGroup> {
+  return window.hermesDesktop.api<ChatGroup>({
+    path: `/api/chat/groups/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    body: updates
+  })
+}
+
+export function deleteChatGroup(id: string): Promise<{ ok: boolean }> {
+  return window.hermesDesktop.api<{ ok: boolean }>({
+    path: `/api/chat/groups/${encodeURIComponent(id)}`,
+    method: 'DELETE'
+  })
+}
+
+export function assignConversation(groupId: string, sessionId: string): Promise<{ ok: boolean }> {
+  return window.hermesDesktop.api<{ ok: boolean }>({
+    path: `/api/chat/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(sessionId)}`,
+    method: 'PUT'
+  })
+}
+
+export function unassignConversation(groupId: string, sessionId: string): Promise<{ ok: boolean }> {
+  return window.hermesDesktop.api<{ ok: boolean }>({
+    path: `/api/chat/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(sessionId)}`,
+    method: 'DELETE'
+  })
+}

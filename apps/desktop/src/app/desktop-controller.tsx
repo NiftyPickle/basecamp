@@ -39,6 +39,7 @@ import {
   normalizeProfileKey,
   refreshActiveProfile
 } from '../store/profile'
+import { refreshProjects } from '../store/projects'
 import {
   $activeSessionId,
   $currentCwd,
@@ -334,6 +335,7 @@ export function DesktopController() {
 
     void refreshCronSessions()
     void refreshCronJobs()
+    void refreshProjects()
   }, [profileScope, refreshCronSessions, refreshCronJobs])
 
   const loadMoreSessions = useCallback(() => {

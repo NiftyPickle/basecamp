@@ -310,11 +310,13 @@ CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestam
 CREATE INDEX IF NOT EXISTS idx_compression_locks_expires ON compression_locks(expires_at);
 
 CREATE TABLE IF NOT EXISTS chat_groups (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    position    INTEGER NOT NULL DEFAULT 0,
-    created_at  REAL NOT NULL,
-    updated_at  REAL NOT NULL
+    id           TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    description  TEXT NOT NULL DEFAULT '',
+    instructions TEXT NOT NULL DEFAULT '',
+    position     INTEGER NOT NULL DEFAULT 0,
+    created_at   REAL NOT NULL,
+    updated_at   REAL NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS chat_group_members (
@@ -1167,7 +1169,7 @@ class SessionDB:
         """
         groups = []
         for row in self._conn.execute(
-            "SELECT id, name, position, created_at, updated_at "
+            "SELECT id, name, description, instructions, position, created_at, updated_at "
             "FROM chat_groups ORDER BY position ASC, created_at ASC"
         ).fetchall():
             g = dict(row)
@@ -1183,8 +1185,20 @@ class SessionDB:
             groups.append(g)
         return groups
 
-    def create_chat_group(self, name: str, *, now: float) -> dict:
-        """Insert a new group at the end (max position + 1). Returns the record."""
+    def create_chat_group(
+        self,
+        name: str,
+        *,
+        now: float,
+        description: str = "",
+        instructions: str = "",
+    ) -> dict:
+        """Insert a new group at the end (max position + 1). Returns the record.
+
+        ``description`` is a short human note shown in the UI. ``instructions``
+        are project-level guidance appended to the agent's system prompt for
+        every chat in the group (see ``instructions_for_session``).
+        """
         group_id = uuid.uuid4().hex
 
         def _do(conn):
@@ -1193,9 +1207,10 @@ class SessionDB:
             ).fetchone()
             position = row[0]
             conn.execute(
-                "INSERT INTO chat_groups (id, name, position, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (group_id, name, position, now, now),
+                "INSERT INTO chat_groups "
+                "(id, name, description, instructions, position, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (group_id, name, description, instructions, position, now, now),
             )
             return position
 
@@ -1203,6 +1218,8 @@ class SessionDB:
         return {
             "id": group_id,
             "name": name,
+            "description": description,
+            "instructions": instructions,
             "position": position,
             "created_at": now,
             "updated_at": now,
@@ -1220,16 +1237,45 @@ class SessionDB:
 
         return bool(self._execute_write(_do))
 
-    def rename_chat_group(self, group_id: str, name: str, *, now: float) -> dict | None:
-        """Rename a group. Returns the updated record, or None if unknown.
+    def update_chat_group(
+        self,
+        group_id: str,
+        *,
+        now: float,
+        name: str | None = None,
+        description: str | None = None,
+        instructions: str | None = None,
+    ) -> dict | None:
+        """Update a group's name/description/instructions. Returns the updated
+        record (list_chat_groups shape), or None if the group is unknown.
 
-        The returned record matches the shape from list_chat_groups (includes
-        session_ids in stored order).
+        Only the provided fields are changed; omitted fields keep their values.
         """
+        sets: list[str] = []
+        params: list[object] = []
+        if name is not None:
+            sets.append("name = ?")
+            params.append(name)
+        if description is not None:
+            sets.append("description = ?")
+            params.append(description)
+        if instructions is not None:
+            sets.append("instructions = ?")
+            params.append(instructions)
+        if not sets:
+            # Nothing to change; just confirm existence and re-read.
+            for g in self.list_chat_groups():
+                if g["id"] == group_id:
+                    return g
+            return None
+        sets.append("updated_at = ?")
+        params.append(now)
+        params.append(group_id)
+
         def _do(conn):
             cur = conn.execute(
-                "UPDATE chat_groups SET name = ?, updated_at = ? WHERE id = ?",
-                (name, now, group_id),
+                f"UPDATE chat_groups SET {', '.join(sets)} WHERE id = ?",
+                tuple(params),
             )
             return cur.rowcount
 
@@ -1237,7 +1283,7 @@ class SessionDB:
             return None
 
         row = self._conn.execute(
-            "SELECT id, name, position, created_at, updated_at "
+            "SELECT id, name, description, instructions, position, created_at, updated_at "
             "FROM chat_groups WHERE id = ?",
             (group_id,),
         ).fetchone()
@@ -1253,6 +1299,29 @@ class SessionDB:
             ).fetchall()
         ]
         return record
+
+    def rename_chat_group(self, group_id: str, name: str, *, now: float) -> dict | None:
+        """Rename a group. Thin wrapper over update_chat_group for callers that
+        only change the name. Returns the updated record or None if unknown.
+        """
+        return self.update_chat_group(group_id, name=name, now=now)
+
+    def instructions_for_session(self, session_id: str) -> str:
+        """Project (chat-group) instructions for the group this session belongs
+        to, or '' if it is ungrouped or the group has no instructions.
+
+        Used to steer the agent: the result is appended to the ephemeral system
+        prompt when the agent is built for this session.
+        """
+        row = self._conn.execute(
+            "SELECT g.instructions FROM chat_group_members m "
+            "JOIN chat_groups g ON g.id = m.group_id "
+            "WHERE m.session_id = ?",
+            (session_id,),
+        ).fetchone()
+        if row is None:
+            return ""
+        return (row[0] or "").strip()
 
     def assign_conversation(self, group_id: str, session_id: str, *, now: float) -> bool:
         """Move a conversation into a group (at most one group per conversation).

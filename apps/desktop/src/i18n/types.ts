@@ -813,6 +813,42 @@ export interface Translations {
     pinned: string
     sessions: string
     cronJobs: string
+    projects: {
+      label: string
+      add: string
+      empty: string
+      noChats: string
+      open: string
+      settings: string
+      createTitle: string
+      editTitle: string
+      nameLabel: string
+      namePlaceholder: string
+      descriptionLabel: string
+      descriptionPlaceholder: string
+      instructionsLabel: string
+      instructionsPlaceholder: string
+      instructionsHint: string
+      create: string
+      created: string
+      createFailed: string
+      saved: string
+      saveFailed: string
+      deleteAction: string
+      deleteTitle: string
+      deleteConfirm: (name: string) => string
+      deleted: string
+      deleteFailed: string
+      addToProject: string
+      removeFromProject: string
+      assignTitle: string
+      assignDesc: string
+      none: string
+      assigned: string
+      assignFailed: string
+      removed: string
+      removeFailed: string
+    }
     groupAriaGrouped: string
     groupAriaUngrouped: string
     groupTitleGrouped: string

@@ -104,3 +104,61 @@ def test_list_filters_orphan_member_sessions(ctx):
     client.put(f"/api/chat/groups/{gid}/members/ghost-session")
     groups = client.get("/api/chat/groups").json()["groups"]
     assert groups[0]["session_ids"] == []
+
+
+def test_create_with_description_and_instructions(client):
+    resp = client.post(
+        "/api/chat/groups",
+        json={"name": "Work", "description": "client work", "instructions": "be concise"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["description"] == "client work"
+    assert body["instructions"] == "be concise"
+    listed = client.get("/api/chat/groups").json()["groups"][0]
+    assert listed["description"] == "client work"
+    assert listed["instructions"] == "be concise"
+
+
+def test_create_defaults_blank_description_instructions(client):
+    body = client.post("/api/chat/groups", json={"name": "Work"}).json()
+    assert body["description"] == ""
+    assert body["instructions"] == ""
+
+
+def test_patch_description_and_instructions(client):
+    gid = client.post("/api/chat/groups", json={"name": "G"}).json()["id"]
+    resp = client.patch(
+        f"/api/chat/groups/{gid}",
+        json={"description": "new desc", "instructions": "new rules"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["description"] == "new desc"
+    assert body["instructions"] == "new rules"
+    assert body["name"] == "G"
+
+
+def test_patch_instructions_only_keeps_name(client):
+    gid = client.post("/api/chat/groups", json={"name": "Keep"}).json()["id"]
+    body = client.patch(f"/api/chat/groups/{gid}", json={"instructions": "x"}).json()
+    assert body["name"] == "Keep"
+    assert body["instructions"] == "x"
+
+
+def test_create_description_too_long_is_400(client):
+    resp = client.post(
+        "/api/chat/groups",
+        json={"name": "G", "description": "x" * 501},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["error_code"] == "validation"
+
+
+def test_create_instructions_too_long_is_400(client):
+    resp = client.post(
+        "/api/chat/groups",
+        json={"name": "G", "instructions": "x" * 16001},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["error_code"] == "validation"

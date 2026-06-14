@@ -74,6 +74,7 @@ import {
   newSessionInProfile,
   normalizeProfileKey
 } from '@/store/profile'
+import { $projects, $sidebarProjectsOpen, setSidebarProjectsOpen } from '@/store/projects'
 import {
   $cronSessions,
   $selectedStoredSessionId,
@@ -91,6 +92,7 @@ import type { SidebarNavItem } from '../../types'
 
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { ProfileRail } from './profile-switcher'
+import { SidebarProjectsSection } from './projects-section'
 import { SidebarSessionRow } from './session-row'
 import { VirtualSessionList } from './virtual-session-list'
 
@@ -343,6 +345,8 @@ export function ChatSidebar({
   const pinsOpen = useStore($sidebarPinsOpen)
   const agentsOpen = useStore($sidebarRecentsOpen)
   const cronOpen = useStore($sidebarCronOpen)
+  const projects = useStore($projects)
+  const projectsOpen = useStore($sidebarProjectsOpen)
   const selectedSessionId = useStore($selectedStoredSessionId)
   const sessions = useStore($sessions)
   const cronSessions = useStore($cronSessions)
@@ -870,6 +874,15 @@ export function ChatSidebar({
             sessions={pinnedSessions}
             sortable={pinnedSessions.length > 1}
             workingSessionIdSet={workingSessionIdSet}
+          />
+        )}
+
+        {contentVisible && showSessionSections && !trimmedQuery && projects.length > 0 && (
+          <SidebarProjectsSection
+            label={s.projects.label}
+            onOpenChat={onResumeSession}
+            onToggle={() => setSidebarProjectsOpen(!projectsOpen)}
+            open={projectsOpen}
           />
         )}
 
