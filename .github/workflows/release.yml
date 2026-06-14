@@ -47,7 +47,23 @@ jobs:
           version: '0.11.8'
 
       - name: Install workspace dependencies
-        run: npm ci
+        # Retry npm ci: postinstall scripts download the Electron binary (and
+        # other native prebuilds) at install time, which intermittently times
+        # out on hosted runners (connect ETIMEDOUT to github). bash is available
+        # on every runner OS, so this loop is portable across the matrix.
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "npm ci attempt $attempt"
+            if npm ci; then
+              exit 0
+            fi
+            echo "npm ci failed (attempt $attempt); cleaning node_modules and retrying in 15s"
+            rm -rf node_modules apps/desktop/node_modules
+            sleep 15
+          done
+          echo "npm ci failed after 3 attempts"
+          exit 1
 
       - name: Build renderer + stage backend
         working-directory: apps/desktop
